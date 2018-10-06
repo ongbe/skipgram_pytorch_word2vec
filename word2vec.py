@@ -45,7 +45,7 @@ class skipgrammodel(nn.Module):
             iterations.set_description("loss = %0.4f, lr = %0.8f" % (loss.data[0], self.optimizer.param_groups[0]['lr']))
                 if x * self.batch_size % 100000 == 0:
                     self.lr = self.start_lr
-                  for group in self.optimizer.param_groups:
+                    for group in self.optimizer.param_groups:
                         group['lr'] = self.lr
          self.save_embedding(sellf.data.id2word, self.outfilename)
 
