@@ -6,11 +6,82 @@ import torch.nn.functional as F
 from tqdm import tqdm
 import numpy as np
 from collections import deque
+import heapq
 
 
 class CorpusList():
     def __init__(self, wordlist):
         self.word_pair_catch = deque()
+
+class HuffmanNode:
+    def __init__(self, wordid, freq):
+        self.wordid = wordid
+        self.freq = freq
+        self.parent = None
+        self.check_lchild = None
+        self.rchild = None
+        self.lchild = None
+        self.code = []
+        self.path = []
+
+class HuffmanTree:
+    def __init__(self, word_freq):
+        self.word_count = len(word_freq)
+        self.huffman = []
+        um_node = []
+        word_freq_list = []
+        for index, value in word_freq.items():
+            word_freq_list.append(value)
+        for wordid, c in word_freq.items():
+            node = Node(wordid, c)
+            heapq.heappush(um_node, (c, wordid, node))
+            self.huffman.append(node)
+        next_id = len(self.huffman)
+        while len(um_node) > 1:
+            _, _, node1 = heapq.heappop(um_node)
+            _, _, node2 = heapq.heappop(um_node)
+            nnode = HuffmanNode(next_id, node1.frequency + node2.frequency)
+            node1.parent = nnode.wordid
+            node2.parent = nnode.wordid
+            nnode.lchild = node1.wordid
+            node1.check_lchild = True
+            nnode.rchild = node2.wordid
+            node2.check_lchild = False
+            self.huffman.append(nnode)
+            heapq.heappush(um_node, (nnode.freq, nnode.wordid, nnode))
+            next_id = len(self.huffman)
+
+        self.make_huffman(um_node[0][2].left_child)
+        self.make_huffman(um_node[0][2].right_child)
+
+    def make_huffman(self, wordid):
+        if self.huffman[wordid].is_left_child:
+            code = [0]
+        else:
+            code = [1]
+
+        self.huffman[wordid].code = self.huffman[self.huffman[wordid].parent].code + code
+        self.huffman[wordid].path = self.huffman[self.huffman[wordid].parent].path + [self.huffman[wordid].parent]
+
+        if self.huffman[wordid].left_child is not None:
+            self.make_huffman(self.huffman[wordid].left_child)
+        if self.huffman[wordid].right_child is not None:
+            self.make_huffman(self.huffman[wordid].right_child)
+
+    def huffman_vars(self):
+        neg_list = []
+        pos_list = []
+        for wordid in range(self.word_count):
+            pos = []
+            neg = []
+            for i, c in enumerate(self.huffman[wordid].code):
+                if c == 0:
+                    pos.append(self.huffman[wordid].path[i])
+                else:
+                    neg.append(self.huffman[wordid].path[i])
+            pos_list.append(pos)
+            neg_list.append(neg)
+        return pos_list, neg_list
 
 
 class SkipGramModel(nn.Module):
@@ -24,7 +95,7 @@ class SkipGramModel(nn.Module):
         self.batch_size = batch_size
         self.start_lr = lr
         self.lr = lr
-        tree = HuffmanTree(self.word_frequency)
+        self.tree = HuffmanTree(self.word_freq)
         self.optimizer = optim.SGD(self.parameters(), lr=0.025)
         self.init_emb()
 
@@ -32,7 +103,7 @@ class SkipGramModel(nn.Module):
         self.table = []
         table_size = 1e6
         word_freq = np.array(list(self.word_freq.values()))**0.75
-        words = sum(word_frequency)
+        words = sum(word_freq)
         ratio = word_freq / words
         count = numpy.round(ratio * table_size)
         for wordid, counter in enumerate(count):
