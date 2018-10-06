@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from tqdm import tqdm
 
+
 class skipgrammodel(nn.Module):
     def __init__(self, embed_size, embed_dims, window=5, batch_size=86, lr=0.025):
         super(skipgrammodel, self).__init__()
@@ -43,10 +44,10 @@ class skipgrammodel(nn.Module):
             loss.backward()
             self.optimizer.step()
             iterations.set_description("loss = %0.4f, lr = %0.8f" % (loss.data[0], self.optimizer.param_groups[0]['lr']))
-                if x * self.batch_size % 100000 == 0:
-                    self.lr = self.start_lr
-                    for group in self.optimizer.param_groups:
-                        group['lr'] = self.lr
+            if x * self.batch_size % 100000 == 0:
+                self.lr = self.start_lr
+                for group in self.optimizer.param_groups:
+                    group['lr'] = self.lr
         self.save_embedding(sellf.data.id2word, self.outfilename)
 
     def forward(self, pos_u, pos_v, neg_u, neg_v):
@@ -77,7 +78,5 @@ class skipgrammodel(nn.Module):
 if __name__ == '__main__':
     inputfilename = "./data/corpus.txt"
     outputfilename = "embeds.txt"
-
-
-    model = skipgrammodel(128,100)
+    model = skipgrammodel(128, 100)
     model.train_model()
