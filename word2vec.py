@@ -12,6 +12,7 @@ import heapq
 class CorpusList():
     def __init__(self, wordlist):
         self.word_pair_catch = deque()
+        print(word_pair_catch)
 
 class HuffmanNode:
     def __init__(self, wordid, freq):
@@ -25,15 +26,16 @@ class HuffmanNode:
         self.path = []
 
 class HuffmanTree:
-    def __init__(self, word_freq):
-        self.word_count = len(word_freq)
+    def __init__(self, freq):
+        self.word_count = len(freq)
+        self.word_freq = len(freq) - set(freq)
         self.huffman = []
-        um_node = []
-        word_freq_list = []
-        for index, value in word_freq.items():
-            word_freq_list.append(value)
-        for wordid, c in word_freq.items():
-            node = Node(wordid, c)
+        self.um_node = []
+        self.freq_list = []
+        for index, value in freq.items():
+            self.freq_list.append(value)
+        for wordid, c in freq.items():
+            self.node = Node(wordid, c)
             heapq.heappush(um_node, (c, wordid, node))
             self.huffman.append(node)
         next_id = len(self.huffman)
@@ -59,7 +61,6 @@ class HuffmanTree:
             code = [0]
         else:
             code = [1]
-
         self.huffman[wordid].code = self.huffman[self.huffman[wordid].parent].code + code
         self.huffman[wordid].path = self.huffman[self.huffman[wordid].parent].path + [self.huffman[wordid].parent]
 
@@ -89,22 +90,23 @@ class SkipGramModel(nn.Module):
         super(SkipGramModel, self).__init__()
         self.embed_size = embed_size
         self.embed_dims = embed_dims
+        self.tree = HuffmanTree(self.freq)
         self.u_embeds = nn.Embedding(2 * embed_size - 1, embed_dims, sparse=True)
         self.v_embeds = nn.Embedding(2 * embed_size - 1, embed_dims, sparse=True)
         self.window = window
         self.batch_size = batch_size
+        self.freq =
         self.start_lr = lr
         self.lr = lr
-        self.tree = HuffmanTree(self.word_freq)
         self.optimizer = optim.SGD(self.parameters(), lr=0.025)
         self.init_emb()
 
     def init_samples(self):
         self.table = []
         table_size = 1e6
-        word_freq = np.array(list(self.word_freq.values()))**0.75
-        words = sum(word_freq)
-        ratio = word_freq / words
+        freq = np.array(list(self.freq.values()))**0.75
+        words = sum(freq)
+        ratio = freq / words
         count = numpy.round(ratio * table_size)
         for wordid, counter in enumerate(count):
             self.sample_table += [wordid] * int(counter)
