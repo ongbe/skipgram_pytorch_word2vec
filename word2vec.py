@@ -47,7 +47,7 @@ class skipgrammodel(nn.Module):
                     self.lr = self.start_lr
                     for group in self.optimizer.param_groups:
                         group['lr'] = self.lr
-         self.save_embedding(sellf.data.id2word, self.outfilename)
+        self.save_embedding(sellf.data.id2word, self.outfilename)
 
     def forward(self, pos_u, pos_v, neg_u, neg_v):
         losses = []
