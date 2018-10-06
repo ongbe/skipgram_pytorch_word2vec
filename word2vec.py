@@ -21,7 +21,7 @@ class skipgrammodel(nn.Module):
         self.init_emb()
 
     def init_emb(self):
-        initrange = 0.5 / self.emb_dims
+        initrange = 0.5 / self.embed_dims
         self.u_embeds.weight.data.uniform_(-initrange, initrange)
         self.v_embeds.weight.data.uniform_(-0, 0)
 
@@ -69,7 +69,7 @@ class skipgrammodel(nn.Module):
     def save_embedding(self, id2word, file_name):
         embeds = self.u_embeds.weight.data.numpy()
         fout = open(file_name, 'w', encoding="UTF-8")
-        fout.write('%d %d\n' % (len(id2word), self.emb_dims))
+        fout.write('%d %d\n' % (len(id2word), self.embed_dims))
         for wordid, w in id2word.items():
             e = embeds[wordid]
             e = ' '.join(map(lambda x: str(x), e))
