@@ -35,8 +35,8 @@ class SkipGramModel(nn.Module):
         words = sum(word_frequency)
         ratio = word_freq / words
         count = numpy.round(ratio * table_size)
-        for wordid, x in enumerate(count):
-            self.sample_table += [wordid] * int(x)
+        for wordid, counter in enumerate(count):
+            self.sample_table += [wordid] * int(counter)
         self.table = np.array(self.table)
 
     def init_emb(self):
