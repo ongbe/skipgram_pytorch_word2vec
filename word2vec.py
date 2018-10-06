@@ -11,14 +11,13 @@ import heapq
 
 class CorpusList():
     def __init__(self, wordlist):
-        self.word_pair_catch = deque()
+        word_pair_catch = deque()
         print(word_pair_catch)
         f = open("./corpus.txt")
         corpus_in = f.read(10240)
         f.close()
-        corpus_list = corpus_in.split()
-        self.corpus_set = set(corpus_list)
-
+        self.corpus_list = corpus_in.split()
+        self.corpus_set = set(self.corpus_list)
 
 class HuffmanNode:
     def __init__(self, wordid, freq):
@@ -92,24 +91,25 @@ class HuffmanTree:
 
 
 class SkipGramModel(nn.Module):
-    def __init__(self, embed_size, embed_dims, window=5, batch_size=86, lr=0.025, huffman_tree = None):
+    def __init__(self, embed_size, embed_dims, window=5, batch_size=150, lr=0.025, huffman_tree = None):
         super(SkipGramModel, self).__init__()
         self.embed_size = embed_size
         self.embed_dims = embed_dims
         self.freq = 0
-        self.tree = huffman_tree
         self.u_embeds = nn.Embedding(2 * embed_size - 1, embed_dims, sparse=True)
         self.v_embeds = nn.Embedding(2 * embed_size - 1, embed_dims, sparse=True)
         self.window = window
         self.batch_size = batch_size
         self.start_lr = lr
         self.lr = lr
+        self.init_emb()
         self.optimizer = optim.SGD(self.parameters(), lr=0.025)
+        self.tree = huffman_tree
         self.init_emb()
 
     def init_samples(self):
         self.table = []
-        table_size = 1e6
+        table_size = 1e8
         freq = np.array(list(self.freq.values()))**0.75
         words = sum(freq)
         ratio = freq / words
@@ -146,7 +146,7 @@ class SkipGramModel(nn.Module):
                 self.lr = self.start_lr
                 for group in self.optimizer.param_groups:
                     group['lr'] = self.lr
-        self.save_embedding(sellf.data.id2word, self.outfilename)
+        self.save_embedding(self.data.id2word, self.outfilename)
 
     def forward(self, pos_u, pos_v, neg_u, neg_v):
         losses = []
@@ -173,16 +173,26 @@ class SkipGramModel(nn.Module):
             e = ' '.join(map(lambda x: str(x), e))
             fout.write('%s %s\n' % (w, e))
 
-class word2vec():
+class Corpus():
+    def __init__(self, intext):
+        self.textblock = intext
+        self.corpus_list = set(textblock.lower().split())
+
+class Word2Vec():
     def __init__(self, corpus, use_huffman = True):
-        self.corpus = corpus
         self.use_huffman = use_huffman
-        self.huffman = HuffmanTree(set(corpus))
-        self.skipmodel = SkipGramModel(128, 100)
+        self.huffman = HuffmanTree(corpus.corpus_list)
+        self.skipmodel = SkipGramModel(128, 100,window=6, huffman_tree=use_huffman)
+        self.skipmodel.init_samples()
         self.skipmodel.tree = huffman
 
 if __name__ == '__main__':
     inputfilename = "./corpus.txt"
     outputfilename = "./embeds.txt"
-    model = SkipGramModel(128, 100)
-    model.train_model()
+    infile = open(inputfilename, "r")
+    corpus_in = infile.read(10240)
+    infile.close()
+    corpus = CorpusList(corpus_in)
+    word2vec = Word2Vec(corpus)
+    word2vec.skipmodel.train_model()
+    word2vec.skipmodel.save_embedding("./embeds.txt")
