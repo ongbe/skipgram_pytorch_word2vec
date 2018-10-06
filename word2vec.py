@@ -4,11 +4,18 @@ import torch.optim as optim
 import torch.nn as nn
 import torch.nn.functional as F
 from tqdm import tqdm
+import numpy as np
+from collections import deque
 
 
-class skipgrammodel(nn.Module):
+class CorpusList():
+    def __init__(self, wordlist):
+        self.word_pair_catch = deque()
+
+
+class SkipGramModel(nn.Module):
     def __init__(self, embed_size, embed_dims, window=5, batch_size=86, lr=0.025):
-        super(skipgrammodel, self).__init__()
+        super(SkipGramModel, self).__init__()
         self.embed_size = embed_size
         self.embed_dims = embed_dims
         self.u_embeds = nn.Embedding(2 * embed_size - 1, embed_dims, sparse=True)
@@ -17,8 +24,20 @@ class skipgrammodel(nn.Module):
         self.batch_size = batch_size
         self.start_lr = lr
         self.lr = lr
+        tree = HuffmanTree(self.word_frequency)
         self.optimizer = optim.SGD(self.parameters(), lr=0.025)
         self.init_emb()
+
+    def init_samples(self):
+        self.table = []
+        table_size = 1e6
+        word_freq = np.array(list(self.word_freq.values()))**0.75
+        words = sum(word_frequency)
+        ratio = word_freq / words
+        count = numpy.round(ratio * table_size)
+        for wordid, x in enumerate(count):
+            self.sample_table += [wordid] * int(x)
+        self.table = np.array(self.table)
 
     def init_emb(self):
         initrange = 0.5 / self.embed_dims
@@ -78,5 +97,5 @@ class skipgrammodel(nn.Module):
 if __name__ == '__main__':
     inputfilename = "./data/corpus.txt"
     outputfilename = "embeds.txt"
-    model = skipgrammodel(128, 100)
+    model = SkipGramModel(128, 100)
     model.train_model()
