@@ -182,7 +182,7 @@ class word2vec():
         self.skipmodel.tree = huffman
 
 if __name__ == '__main__':
-    inputfilename = "./data/corpus.txt"
-    outputfilename = "embeds.txt"
+    inputfilename = "./corpus.txt"
+    outputfilename = "./embeds.txt"
     model = SkipGramModel(128, 100)
     model.train_model()
