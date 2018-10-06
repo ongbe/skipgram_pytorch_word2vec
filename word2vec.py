@@ -13,6 +13,12 @@ class CorpusList():
     def __init__(self, wordlist):
         self.word_pair_catch = deque()
         print(word_pair_catch)
+        f = open("./corpus.txt")
+        corpus_in = f.read(10240)
+        f.close()
+        corpus_list = corpus_in.split()
+        self.corpus_set = set(corpus_list)
+
 
 class HuffmanNode:
     def __init__(self, wordid, freq):
@@ -27,8 +33,8 @@ class HuffmanNode:
 
 class HuffmanTree:
     def __init__(self, freq):
-        self.word_count = len(freq)
-        self.word_freq = len(freq) - set(freq)
+        self.word_count = freq.items()
+        self.word_freq = freq.items()
         self.huffman = []
         self.um_node = []
         self.freq_list = []
@@ -86,16 +92,16 @@ class HuffmanTree:
 
 
 class SkipGramModel(nn.Module):
-    def __init__(self, embed_size, embed_dims, window=5, batch_size=86, lr=0.025):
+    def __init__(self, embed_size, embed_dims, window=5, batch_size=86, lr=0.025, huffman_tree = None):
         super(SkipGramModel, self).__init__()
         self.embed_size = embed_size
         self.embed_dims = embed_dims
-        self.tree = HuffmanTree(self.freq)
+        self.freq = 0
+        self.tree = huffman_tree
         self.u_embeds = nn.Embedding(2 * embed_size - 1, embed_dims, sparse=True)
         self.v_embeds = nn.Embedding(2 * embed_size - 1, embed_dims, sparse=True)
         self.window = window
         self.batch_size = batch_size
-        self.freq =
         self.start_lr = lr
         self.lr = lr
         self.optimizer = optim.SGD(self.parameters(), lr=0.025)
@@ -166,6 +172,14 @@ class SkipGramModel(nn.Module):
             e = embeds[wordid]
             e = ' '.join(map(lambda x: str(x), e))
             fout.write('%s %s\n' % (w, e))
+
+class word2vec():
+    def __init__(self, corpus, use_huffman = True):
+        self.corpus = corpus
+        self.use_huffman = use_huffman
+        self.huffman = HuffmanTree(set(corpus))
+        self.skipmodel = SkipGramModel(128, 100)
+        self.skipmodel.tree = huffman
 
 if __name__ == '__main__':
     inputfilename = "./data/corpus.txt"
