@@ -8,11 +8,12 @@ import heapq
 
 
 class CorpusList():
-    def __init__(self:
+    def __init__(self):
         f = open("./corpus.txt")
-        corpus_in = f.read((4096))
+        corpusin = f.read(4096)
+        corpusin = list(corpusin.strip().strip(".").strip(",").strip("!").strip("?").lower())
         f.close()
-        self.corpus_list = corpus_in.split()
+        self.corpus_list = corpusin
         self.corpus_set = set(self.corpus_list)
 
 class HuffmanNode:
@@ -27,7 +28,7 @@ class HuffmanNode:
         self.path = []
 
 class SkipGramModel(nn.Module):
-    def __init__(self, embed_size, embed_dims, window=5, batch_size=150, lr=0.025, corpus = CorpusList("Empty corpus, please supply a good corpus" )):
+    def __init__(self, embed_size, embed_dims, corpus, window=5, batch_size=150, lr=0.025):
         super(SkipGramModel, self).__init__()
         self.embed_size = embed_size
         self.embed_dims = embed_dims
@@ -70,18 +71,19 @@ class SkipGramModel(nn.Module):
         self.init_emb()
 
     def make_huffman(self, wordid):
-        if len(self.huffman) >= wordid:
-            if self.huffman[wordid].check_lchild:
-                code = [0]
-            else:
-                code = [1]
-            self.huffman[wordid].code = self.huffman[self.huffman[wordid].parent].code + code
-            self.huffman[wordid].path = self.huffman[self.huffman[wordid].parent].path + [self.huffman[wordid].parent]
+        if len(self.huffman) < 1:
+            return
+        if self.huffman[wordid].check_lchild:
+            code = [0]
+        else:
+            code = [1]
+        self.huffman[wordid].code = self.huffman[self.huffman[wordid].parent].code + code
+        self.huffman[wordid].path = self.huffman[self.huffman[wordid].parent].path + [self.huffman[wordid].parent]
 
-            if self.huffman[wordid].lchild is not None:
-                self.make_huffman(self.huffman[wordid].lchild)
-            if self.huffman[wordid].rchild is not None:
-                self.make_huffman(self.huffman[wordid].rchild)
+        if self.huffman[wordid].lchild is not None:
+            self.make_huffman(self.huffman[wordid].lchild)
+        if self.huffman[wordid].rchild is not None:
+            self.make_huffman(self.huffman[wordid].rchild)
 
     def init_samples(self):
         self.table = []
@@ -150,9 +152,9 @@ class SkipGramModel(nn.Module):
             fout.write('%s %s\n' % (w, e))
 
 class Word2Vec():
-    def __init__(self, intext = "This is just an empty corpus. Please use a corpus text of sufficient length for contextual analysis"):
-        self.corpuslist = CorpusList(intext)
-        self.skipmodel = SkipGramModel(128, 100,window=5)
+    def __init__(self):
+        self.corpus = CorpusList()
+        self.skipmodel = SkipGramModel(128, 100, self.corpus, window=5)
         self.skipmodel.init_samples()
 
 if __name__ == '__main__':
@@ -161,7 +163,6 @@ if __name__ == '__main__':
     infile = open(inputfilename, "r")
     corpus_in = infile.read(10240)
     infile.close()
-    corpus = CorpusList(corpus_in)
-    word2vec = Word2Vec(corpus.corpus_list)
+    word2vec = Word2Vec()
     word2vec.skipmodel.train_model()
     word2vec.skipmodel.save_embedding("./embeds.txt")
