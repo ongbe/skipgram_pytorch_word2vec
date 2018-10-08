@@ -14,7 +14,7 @@ class CorpusList():
         word_pair_catch = deque()
         print(word_pair_catch)
         f = open("./corpus.txt")
-        corpus_in = f.read(10240)
+        corpus_in = f.read((4096))
         f.close()
         self.corpus_list = corpus_in.split()
         self.corpus_set = set(self.corpus_list)
@@ -30,24 +30,35 @@ class HuffmanNode:
         self.code = []
         self.path = []
 
-class HuffmanTree:
-    def __init__(self, freq):
-        self.word_count = freq.items()
-        self.word_freq = freq.items()
+class SkipGramModel(nn.Module):
+    def __init__(self, embed_size, embed_dims, window=5, batch_size=150, lr=0.025, corpus = CorpusList("Empty corpus, please supply a good corpus" )):
+        super(SkipGramModel, self).__init__()
+        self.embed_size = embed_size
+        self.embed_dims = embed_dims
+        self.corpus = corpus
+        self.freq = len(corpus.corpus_set)
+        self.u_embeds = nn.Embedding(2 * embed_size - 1, embed_dims, sparse=True)
+        self.v_embeds = nn.Embedding(2 * embed_size - 1, embed_dims, sparse=True)
+        self.window = window
+        self.batch_size = batch_size
+        self.start_lr = lr
+        self.lr = lr
+        self.init_emb()
+        self.optimizer = optim.SGD(self.parameters(), lr=0.025)
         self.huffman = []
-        self.um_node = []
+        um_node = []
         self.freq_list = []
-        for index, value in freq.items():
+        for index, value in enumerate(corpus.corpus_set):
             self.freq_list.append(value)
-        for wordid, c in freq.items():
-            self.node = Node(wordid, c)
-            heapq.heappush(um_node, (c, wordid, node))
-            self.huffman.append(node)
+        for wordid, c in enumerate("".join(str(self.corpus.corpus_set))):
+            self.node = HuffmanNode(wordid, c)
+            heapq.heappush(um_node, (c, wordid, self.node))
+            self.huffman.append(self.node)
         next_id = len(self.huffman)
         while len(um_node) > 1:
             _, _, node1 = heapq.heappop(um_node)
             _, _, node2 = heapq.heappop(um_node)
-            nnode = HuffmanNode(next_id, node1.frequency + node2.frequency)
+            nnode = HuffmanNode(next_id, node1.freq + node2.freq)
             node1.parent = nnode.wordid
             node2.parent = nnode.wordid
             nnode.lchild = node1.wordid
@@ -58,59 +69,27 @@ class HuffmanTree:
             heapq.heappush(um_node, (nnode.freq, nnode.wordid, nnode))
             next_id = len(self.huffman)
 
-        self.make_huffman(um_node[0][2].left_child)
-        self.make_huffman(um_node[0][2].right_child)
+            self.make_huffman(um_node[0][2].lchild)
+            self.make_huffman(um_node[0][2].rchild)
+        self.init_emb()
 
     def make_huffman(self, wordid):
-        if self.huffman[wordid].is_left_child:
+        if self.huffman[wordid].check_lchild:
             code = [0]
         else:
             code = [1]
         self.huffman[wordid].code = self.huffman[self.huffman[wordid].parent].code + code
         self.huffman[wordid].path = self.huffman[self.huffman[wordid].parent].path + [self.huffman[wordid].parent]
 
-        if self.huffman[wordid].left_child is not None:
-            self.make_huffman(self.huffman[wordid].left_child)
-        if self.huffman[wordid].right_child is not None:
-            self.make_huffman(self.huffman[wordid].right_child)
-
-    def huffman_vars(self):
-        neg_list = []
-        pos_list = []
-        for wordid in range(self.word_count):
-            pos = []
-            neg = []
-            for i, c in enumerate(self.huffman[wordid].code):
-                if c == 0:
-                    pos.append(self.huffman[wordid].path[i])
-                else:
-                    neg.append(self.huffman[wordid].path[i])
-            pos_list.append(pos)
-            neg_list.append(neg)
-        return pos_list, neg_list
-
-
-class SkipGramModel(nn.Module):
-    def __init__(self, embed_size, embed_dims, window=5, batch_size=150, lr=0.025, huffman_tree = None):
-        super(SkipGramModel, self).__init__()
-        self.embed_size = embed_size
-        self.embed_dims = embed_dims
-        self.freq = 0
-        self.u_embeds = nn.Embedding(2 * embed_size - 1, embed_dims, sparse=True)
-        self.v_embeds = nn.Embedding(2 * embed_size - 1, embed_dims, sparse=True)
-        self.window = window
-        self.batch_size = batch_size
-        self.start_lr = lr
-        self.lr = lr
-        self.init_emb()
-        self.optimizer = optim.SGD(self.parameters(), lr=0.025)
-        self.tree = huffman_tree
-        self.init_emb()
+        if self.huffman[wordid].lchild is not None:
+            self.make_huffman(self.huffman[wordid].lchild)
+        if self.huffman[wordid].rchild is not None:
+            self.make_huffman(self.huffman[wordid].rchild)
 
     def init_samples(self):
         self.table = []
         table_size = 1e8
-        freq = np.array(list(self.freq.values()))**0.75
+        freq = np.array(list(len(self.corpus.corpus_set))**0.75)
         words = sum(freq)
         ratio = freq / words
         count = numpy.round(ratio * table_size)
@@ -173,16 +152,10 @@ class SkipGramModel(nn.Module):
             e = ' '.join(map(lambda x: str(x), e))
             fout.write('%s %s\n' % (w, e))
 
-class Corpus():
-    def __init__(self, intext):
-        self.textblock = intext
-        self.corpus_list = set(textblock.lower().split())
-
 class Word2Vec():
-    def __init__(self, corpus, use_huffman = True):
-        self.use_huffman = use_huffman
-        self.huffman = HuffmanTree(corpus.corpus_list)
-        self.skipmodel = SkipGramModel(128, 100,window=6, huffman_tree=use_huffman)
+    def __init__(self, intext = "This is just an empty corpus. Please use a corpus text of sufficient length for contextual analysis"):
+        self.corpuslist = CorpusList(intext)
+        self.skipmodel = SkipGramModel(128, 100,window=5)
         self.skipmodel.init_samples()
         self.skipmodel.tree = huffman
 
