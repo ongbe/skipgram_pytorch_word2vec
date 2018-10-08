@@ -3,16 +3,12 @@ from torch.autograd import Variable
 import torch.optim as optim
 import torch.nn as nn
 import torch.nn.functional as F
-from tqdm import tqdm
 import numpy as np
-from collections import deque
 import heapq
 
 
 class CorpusList():
-    def __init__(self, wordlist):
-        word_pair_catch = deque()
-        print(word_pair_catch)
+    def __init__(self:
         f = open("./corpus.txt")
         corpus_in = f.read((4096))
         f.close()
@@ -74,17 +70,18 @@ class SkipGramModel(nn.Module):
         self.init_emb()
 
     def make_huffman(self, wordid):
-        if self.huffman[wordid].check_lchild:
-            code = [0]
-        else:
-            code = [1]
-        self.huffman[wordid].code = self.huffman[self.huffman[wordid].parent].code + code
-        self.huffman[wordid].path = self.huffman[self.huffman[wordid].parent].path + [self.huffman[wordid].parent]
+        if len(self.huffman) >= wordid:
+            if self.huffman[wordid].check_lchild:
+                code = [0]
+            else:
+                code = [1]
+            self.huffman[wordid].code = self.huffman[self.huffman[wordid].parent].code + code
+            self.huffman[wordid].path = self.huffman[self.huffman[wordid].parent].path + [self.huffman[wordid].parent]
 
-        if self.huffman[wordid].lchild is not None:
-            self.make_huffman(self.huffman[wordid].lchild)
-        if self.huffman[wordid].rchild is not None:
-            self.make_huffman(self.huffman[wordid].rchild)
+            if self.huffman[wordid].lchild is not None:
+                self.make_huffman(self.huffman[wordid].lchild)
+            if self.huffman[wordid].rchild is not None:
+                self.make_huffman(self.huffman[wordid].rchild)
 
     def init_samples(self):
         self.table = []
@@ -105,7 +102,7 @@ class SkipGramModel(nn.Module):
     def train_model(self):
         pair_count = self.data.evaluate_pair_count(self.window)
         batch_count = self.iteration * pair_count / self.batch_size
-        iterations = tqdm(range(int(batch_count)))
+        iterations = 100
         self.save_embedding(self.data.id2word, self.window)
         pairs = self.data.get_batch_pairs(self.batch_size, self.window)
         pairs, neg_pairs = self.data.get_batch_pairs(pairs, 5)
@@ -157,7 +154,6 @@ class Word2Vec():
         self.corpuslist = CorpusList(intext)
         self.skipmodel = SkipGramModel(128, 100,window=5)
         self.skipmodel.init_samples()
-        self.skipmodel.tree = huffman
 
 if __name__ == '__main__':
     inputfilename = "./corpus.txt"
@@ -166,6 +162,6 @@ if __name__ == '__main__':
     corpus_in = infile.read(10240)
     infile.close()
     corpus = CorpusList(corpus_in)
-    word2vec = Word2Vec(corpus)
+    word2vec = Word2Vec(corpus.corpus_list)
     word2vec.skipmodel.train_model()
     word2vec.skipmodel.save_embedding("./embeds.txt")
