@@ -16,6 +16,7 @@ class CorpusList():
         self.corpus_list = corpusin
         self.corpus_set = set(self.corpus_list)
 
+
 class HuffmanNode:
     def __init__(self, wordid, freq):
         self.wordid = wordid
@@ -47,10 +48,10 @@ class SkipGramModel(nn.Module):
         self.freq_list = []
         for index, value in enumerate(corpus.corpus_set):
             self.freq_list.append(value)
-        for wordid, c in enumerate("".join(str(self.corpus.corpus_set))):
-            self.node = HuffmanNode(wordid, c)
-            heapq.heappush(um_node, (c, wordid, self.node))
-            self.huffman.append(self.node)
+        for wordid, c in enumerate(list(self.corpus.corpus_set)):
+            node = HuffmanNode(wordid, c)
+            heapq.heappush(um_node, (c, wordid, node))
+            self.huffman.append(node)
         next_id = len(self.huffman)
         while len(um_node) > 1:
             _, _, node1 = heapq.heappop(um_node)
@@ -68,6 +69,7 @@ class SkipGramModel(nn.Module):
 
             self.make_huffman(um_node[0][2].lchild)
             self.make_huffman(um_node[0][2].rchild)
+        self.init_samples()
         self.init_emb()
 
     def make_huffman(self, wordid):
@@ -88,12 +90,12 @@ class SkipGramModel(nn.Module):
     def init_samples(self):
         self.table = []
         table_size = 1e8
-        freq = np.array(list(len(self.corpus.corpus_set))**0.75)
-        words = sum(freq)
+        freq = len(self.corpus.corpus_set)
+        words = int(freq)
         ratio = freq / words
-        count = numpy.round(ratio * table_size)
-        for wordid, counter in enumerate(count):
-            self.sample_table += [wordid] * int(counter)
+        count = np.round(ratio * table_size)
+        for wordid, counter in range(int(count)):
+            self.sample_table += [wordid] * counter
         self.table = np.array(self.table)
 
     def init_emb(self):
@@ -104,7 +106,7 @@ class SkipGramModel(nn.Module):
     def train_model(self):
         pair_count = self.data.evaluate_pair_count(self.window)
         batch_count = self.iteration * pair_count / self.batch_size
-        iterations = 100
+        iterations = batch_count
         self.save_embedding(self.data.id2word, self.window)
         pairs = self.data.get_batch_pairs(self.batch_size, self.window)
         pairs, neg_pairs = self.data.get_batch_pairs(pairs, 5)
@@ -155,7 +157,6 @@ class Word2Vec():
     def __init__(self):
         self.corpus = CorpusList()
         self.skipmodel = SkipGramModel(128, 100, self.corpus, window=5)
-        self.skipmodel.init_samples()
 
 if __name__ == '__main__':
     inputfilename = "./corpus.txt"
